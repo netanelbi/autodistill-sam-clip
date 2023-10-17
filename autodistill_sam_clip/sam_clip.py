@@ -54,9 +54,12 @@ class SAMCLIP(DetectionBaseModel):
         self.clip_preprocess = preprocess
         self.tokenize = clip.tokenize
 
-    def predict(self, input: str, confidence: int = 0.5) -> sv.Detections:
-        image_bgr = cv2.imread(input)
-        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+    def predict(self, input: str | np.ndarray , confidence: int = 0.5, nms_iou: float = 0.5, verbose: bool = False) -> sv.Detections:
+        if type(input) == str:
+            image_bgr = cv2.imread(input)
+            image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        else:
+            image_rgb = input
 
         # SAM Predictions
         sam_result = self.sam_predictor.generate(image_rgb)
@@ -123,8 +126,8 @@ class SAMCLIP(DetectionBaseModel):
                 # get cosine similarity between image and text features
 
                 similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
-
-                print(similarity)
+                if verbose:
+                    print(similarity)
 
                 cosime_sims.append(similarity[0][0].item())
 
@@ -135,6 +138,8 @@ class SAMCLIP(DetectionBaseModel):
 
             max_prob = values[0].item()
             max_idx = indices[0].item()
+            if verbose:
+                print('selected class_id', max_idx)
 
             if max_prob > confidence:
                 valid_detections.append(
@@ -159,15 +164,15 @@ class SAMCLIP(DetectionBaseModel):
 
         final_detections = valid_detections
 
-        nms = sv.non_max_suppression(np.array(nms_data), 0.5)
+        nms = sv.non_max_suppression(np.array(nms_data), nms_iou)
 
         final_detections = []
 
         # nms is list of bools
+        class_ids = []
         for idx, is_valid in enumerate(nms):
             if is_valid:
                 final_detections.append(valid_detections[idx])
+                class_ids.append(idx)
 
-        return combine_detections(
-            final_detections, overwrite_class_ids=[0] * len(final_detections)
-        )
+        return combine_detections(final_detections, overwrite_class_ids=None)
