@@ -114,7 +114,7 @@ class SAMCLIP(DetectionBaseModel):
 
             image = self.clip_preprocess(image).unsqueeze(0).to(DEVICE)
 
-            cosime_sims = []
+            # cosime_sims = []
 
             with torch.no_grad():
                 image_features = self.clip_model.encode_image(image).to(DEVICE)
@@ -129,12 +129,12 @@ class SAMCLIP(DetectionBaseModel):
                 if verbose:
                     print(similarity)
 
-                cosime_sims.append(similarity[0][0].item())
+                # cosime_sims.append(similarity[0][0].item())
 
             max_prob = None
             max_idx = None
 
-            values, indices = torch.topk(torch.tensor(cosime_sims), 1)
+            values, indices = torch.topk(torch.tensor(similarity), 1)
 
             max_prob = values[0].item()
             max_idx = indices[0].item()
