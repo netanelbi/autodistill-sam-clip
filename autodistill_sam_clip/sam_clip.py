@@ -82,7 +82,8 @@ class SAMCLIP(DetectionBaseModel):
         if len(sam_result) == 0:
             return sv.Detections.empty()
 
-        labels.append("background")
+        if len(labels<2):
+            labels.append("background")
 
         for mask in sam_result:
             mask_item = mask["segmentation"]
@@ -125,6 +126,9 @@ class SAMCLIP(DetectionBaseModel):
                 text_features /= text_features.norm(dim=-1, keepdim=True)
                 # get cosine similarity between image and text features
 
+                if verbose:
+                    print(100.0 * image_features @ text_features.T)
+
                 similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
                 if verbose:
                     print(similarity)
@@ -134,7 +138,7 @@ class SAMCLIP(DetectionBaseModel):
             max_prob = None
             max_idx = None
 
-            values, indices = torch.topk(torch.tensor(similarity), 1)
+            values, indices = torch.topk(similarity, 1)
 
             max_prob = values[0].item()
             max_idx = indices[0].item()
@@ -150,30 +154,33 @@ class SAMCLIP(DetectionBaseModel):
                         class_id=np.array([max_idx]),
                     )
                 )
-                # (x_min, y_min, x_max, y_max, score, class)
-                nms_data.append(
-                    (
-                        mask["bbox"][0],
-                        mask["bbox"][1],
-                        mask["bbox"][2],
-                        mask["bbox"][3],
-                        max_prob,
-                        max_idx,
-                    )
-                )
+                # # (x_min, y_min, x_max, y_max, score, class)
+                # nms_data.append(
+                #     (
+                #         mask["bbox"][0],
+                #         mask["bbox"][1],
+                #         mask["bbox"][2],
+                #         mask["bbox"][3],
+                #         max_prob,
+                #         max_idx,
+                #     )
+                # )
         if len(valid_detections) == 0:
             return sv.Detections.empty()
-        final_detections = valid_detections
+        else:
+            return combine_detections(valid_detections, overwrite_class_ids=None)
+        
+        # final_detections = valid_detections
 
-        nms = sv.non_max_suppression(np.array(nms_data), nms_iou)
+        # nms = sv.non_max_suppression(np.array(nms_data), nms_iou)
 
-        final_detections = []
+        # final_detections = []
 
-        # nms is list of bools
-        class_ids = []
-        for idx, is_valid in enumerate(nms):
-            if is_valid:
-                final_detections.append(valid_detections[idx])
-                class_ids.append(idx)
+        # # nms is list of bools
+        # class_ids = []
+        # for idx, is_valid in enumerate(nms):
+        #     if is_valid:
+        #         final_detections.append(valid_detections[idx])
+        #         class_ids.append(idx)
 
-        return combine_detections(final_detections, overwrite_class_ids=None)
+        
