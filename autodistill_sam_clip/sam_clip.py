@@ -161,7 +161,8 @@ class SAMCLIP(DetectionBaseModel):
                         max_idx,
                     )
                 )
-
+        if len(valid_detections) == 0:
+            return sv.Detections.empty()
         final_detections = valid_detections
 
         nms = sv.non_max_suppression(np.array(nms_data), nms_iou)
