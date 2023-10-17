@@ -82,8 +82,7 @@ class SAMCLIP(DetectionBaseModel):
         if len(sam_result) == 0:
             return sv.Detections.empty()
 
-        if len(labels<2):
-            labels.append("background")
+        assert len(labels) > 1, "at least 2 labels need. you can add background"
 
         for mask in sam_result:
             mask_item = mask["segmentation"]
