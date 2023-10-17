@@ -54,7 +54,7 @@ class SAMCLIP(DetectionBaseModel):
         self.clip_preprocess = preprocess
         self.tokenize = clip.tokenize
 
-    def predict(self, input: str | np.ndarray , confidence: int = 0.5, nms_iou: float = 0.5, verbose: bool = False) -> sv.Detections:
+    def predict(self, input: str | np.ndarray , confidence: int = 0.5, verbose: bool = False) -> sv.Detections:
         if type(input) == str:
             image_bgr = cv2.imread(input)
             image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
